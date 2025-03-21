@@ -177,7 +177,7 @@ def main():
         for x in range(len(s.body)):
             if s.body[x].pos in list(map(lambda z:z.pos, s.body[x+1:])):
                 print('Score: ', len(s.body))
-                message_box('Ты проиграл!', 'Играть снова...')
+                message_box('You've lost!', 'Play again...')
                 s.reset((10, 10))
                 break
 

@@ -28,7 +28,7 @@ Using the example of this game, we want to learn how well the genetic algorithm 
 * Andrey Vasiliev  - responsible for integration genetic algorithm to the snake
 
 ## Project references
-[geeksforgeeks]([https://www.geeksforgeeks.org/](https://www.geeksforgeeks.org/genetic-algorithms/))\
-[youtube]([https://www.youtube.com/](https://www.youtube.com/@HowdyhoNet))\
-[habr]([https://habr.com/](https://habr.com/ru/articles/128704/))\
-[github](https://github.com/Cdeth567)
+[Geeksforgeeks](https://www.geeksforgeeks.org/genetic-algorithms)\
+[Youtube](https://www.youtube.com/@HowdyhoNet)\
+[Habr](https://habr.com/ru/articles/128704)\
+[Github](https://github.com/Cdeth567)

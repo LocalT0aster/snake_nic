@@ -25,10 +25,10 @@ Using the example of this game, we want to learn how well the genetic algorithm 
 * Danil Nesterov - responsible for integration genetic algorithm to the snake
 * Valeriia Kolesnikova - responsible for basic snake algorithm
 * Gleb Lobov - team leader, responsible for documentation and distribution of the tasks
-* Andrei  - responsible for integration genetic algorithm to the snake
+* Andrey Vasiliev  - responsible for integration genetic algorithm to the snake
 
 ## Project references
-[geeksforgeeks](https://www.geeksforgeeks.org/)\
-[youtube](https://www.youtube.com/)\
-[habr](https://habr.com/)\
+[geeksforgeeks]([https://www.geeksforgeeks.org/](https://www.geeksforgeeks.org/genetic-algorithms/))\
+[youtube]([https://www.youtube.com/](https://www.youtube.com/@HowdyhoNet))\
+[habr]([https://habr.com/](https://habr.com/ru/articles/128704/))\
 [github](https://github.com/Cdeth567)

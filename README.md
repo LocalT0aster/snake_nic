@@ -29,6 +29,4 @@ Using the example of this game, we want to learn how well the genetic algorithm 
 
 ## Project references
 [Geeksforgeeks](https://www.geeksforgeeks.org/genetic-algorithms)\
-[Youtube](https://www.youtube.com/@HowdyhoNet)\
 [Habr](https://habr.com/ru/articles/128704)\
-[Github](https://github.com/Cdeth567)

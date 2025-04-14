@@ -30,3 +30,6 @@ Using the example of this game, we want to learn how well the genetic algorithm 
 ## Project references
 [Geeksforgeeks](https://www.geeksforgeeks.org/genetic-algorithms)\
 [Habr](https://habr.com/ru/articles/128704)\
+[Habr](https://habr.com/ru/articles/336612/)\
+[GitHub](https://chrispresso.github.io/AI_Learns_To_Play_SMB_Using_GA_And_NN)\
+[Github](https://github.com/ricardofabila/Super-Mario-Genetic-Algorithm)

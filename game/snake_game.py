@@ -4,6 +4,7 @@ import pygame
 import random
 import numpy as np
 import math
+import operator
 from enum import Enum
 
 from torchgen.gen import field
@@ -114,17 +115,17 @@ class SnakeGameAI:
 
         # Update head position based on current direction.
         if self.direction == Direction.LEFT:
-            self.head[0] -= 1
+            self.head = sum(self.head, (-1, 0))
         elif self.direction == Direction.RIGHT:
-            self.head[0] += 1
+            self.head = sum(self.head, (1, 0))
         elif self.direction == Direction.UP:
-            self.head[1] -= 1
+            self.head = sum(self.head, (0, -1))
         elif self.direction == Direction.DOWN:
-            self.head[1] += 1
+            self.head = sum(self.head, (0, 1))
 
     def _update_snake(self):
         """Add new head to the snake and remove the tail if not growing."""
-        self.snake_deque.appendLeft(deepcopy(self.head))
+        self.snake_deque.appendleft(deepcopy(self.head))
         if len(self.snake_deque) > self.snake_length:
             self.snake_deque.pop()
 
@@ -145,24 +146,24 @@ class SnakeGameAI:
         vision = np.zeros((vision_size, vision_size, 3), dtype=np.float16)
         
         # Top-left position of the vision grid in pixel coordinates
-        start_x = self.head[0] - half
-        start_y = self.head[1] - half
+        start = diff(self.head, (vision_size, vision_size))
 
         # Populate the vision matrix cell by cell.
-        for cell_x in range(start_x, start_x + vision_size):
-            for cell_y in range(start_y, start_y + vision_size):
+        for cell_x in range(0, vision_size):
+            for cell_y in range(0, vision_size):
+                cell = (cell_x, cell_y)
                 # Mark walls if out of bounds.
-                if not in_rect((cell_x, cell_y), (0, 0), self.field_size):
-                    vision[cell_x, cell_y, 0] = 1.0  # Wall
+                if not in_rect(sum(cell, start), (0, 0), self.field_size):
+                    vision[*cell, 0] = 1.0  # Wall
                 else:
                     # Mark food presence.
-                    if cell_x == self.food[0] and cell_y == self.food[1]:
-                        vision[cell_x, cell_y, 2] = 1.0
+                    if self.food == cell:
+                        vision[*cell, 2] = 1.0
         
         # Mark snake body presence.
         for segment in self.snake_deque:
-            if in_rect(segment, (start_x, start_y), (start_x + vision_size, start_y + vision_size)):
-                vision[segment[0] - start_x, segment[1] - start_y, 1] = 1.0
+            if in_rect(segment, start, sum(start, (vision_size, vision_size))):
+                vision[*diff(segment, start), 1] = 1.0
         
         # Flatten the vision matrix.
         # vision_flat = vision.flatten()  # 21*21*3 = 1323
@@ -206,7 +207,7 @@ class SnakeGameAI:
             return reward, game_over, self.score
         
         # Check if food is eaten.
-        if self.head[0] == self.food[0] and self.head[1] == self.food[1]:
+        if self.head == self.food:
             self.snake_length += 1
             self.score += 1
             reward += 100.0  # Reward for eating food
@@ -224,6 +225,12 @@ class SnakeGameAI:
 
 def in_rect(point: tuple, start: tuple, end: tuple) -> bool:
     return point[0] >= start[0] and point[0] < end[0] and point[1] >= start[1] and point[1] < end[1]
+
+def sum(a: tuple, b:tuple):
+    return tuple(map(operator.add, a, b))
+
+def diff(a: tuple, b:tuple):
+    return tuple(map(operator.sub, a, b))
 
 if __name__ == '__main__':
     # Quick test: run a manual game with random actions.

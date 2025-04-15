@@ -38,7 +38,7 @@ def continue_training(seed_model_path, extra_generations=50, render=False):
 if __name__ == "__main__":
     # Path to the existing best model.
     seed_model_path = "best_model.pth"
-    extra_generations = 400
+    extra_generations = 80
     best_model, best_fitness = continue_training(seed_model_path, extra_generations=extra_generations, render=False)
     print("Fine tuning complete. Best Fitness:", best_fitness)
     # Save the fine tuned model.

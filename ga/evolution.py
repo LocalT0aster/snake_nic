@@ -20,7 +20,7 @@ device = torch.device("cuda" if use_cuda else "cpu")
 # print(f"Using device: {device}")
 
 # GA configuration constants.
-DEFAULT_POPULATION_SIZE = 80
+DEFAULT_POPULATION_SIZE = 60
 DEFAULT_ELITE_PERCENT = 0.10   # Top 10% are preserved
 DEFAULT_NUM_GENERATIONS = 80
 STEPS_PER_GAME = 1000           # Maximum number of steps per simulation
@@ -132,7 +132,7 @@ def run_evolution(render: bool = False,
         elite_fitness_scores = [fitness_scores[i] for i in sorted_indices[:num_elites]]
         avg_elite_fitness = sum(elite_fitness_scores) / num_elites
     
-        print(f"Gen {generation}: BestFit= {best_gen_fitness:.2f}, AvgFit= {avg_fitness:.2f}, AvgEliteFit= {avg_elite_fitness:.2f}")
+        print(f"Gen {generation}: BestFit= {best_gen_fitness:.4f}, AvgFit= {avg_fitness:.4f}, AvgEliteFit= {avg_elite_fitness:.4f}")
 
         while len(new_population) < population_size:
             parent1 = tournament_selection(population, fitness_scores, tournament_size=int(population_size * elite_percent))

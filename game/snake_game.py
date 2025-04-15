@@ -1,3 +1,4 @@
+from dataclasses import field
 import pygame
 from collections import deque
 from copy import deepcopy
@@ -28,7 +29,7 @@ class SnakeGameAI:
     on the snake's head along with normalized food distance (dx, dy) and normalized snake length.
     """
 
-    def __init__(self, field_size=(30, 30), block_size=20, snake_speed=15, render=False, random_seed: int | None = 5661):
+    def __init__(self, field_size=(30, 30), block_size=20, snake_speed=15, render=False, random_seed: int | None = None):
         # Game configuration
         self.field_size = field_size
         self.block_size = block_size
@@ -38,7 +39,7 @@ class SnakeGameAI:
         self.window_height = self.field_size[1] * self.block_size
 
         if random_seed:
-            random.seed(random_seed)  # set seed to reduce noise
+            random.seed(random_seed)  # set seed to reduce noise, 5661 is good for fast 1st apple
 
         # Colors for drawing (if rendering is enabled)
         self.white = (255, 255, 255)
@@ -75,9 +76,10 @@ class SnakeGameAI:
         if self.snake_length >= self.field_size[0] * self.field_size[1]:
             raise ValueError("Food does not fit inside the field")
             return
+        assisting_padding = 4
 
         while True:
-            self.food = (random.randrange(0, self.field_size[0]), random.randrange(0, self.field_size[1]))
+            self.food = (random.randrange(0 + assisting_padding, self.field_size[0]-assisting_padding), random.randrange(0+assisting_padding, self.field_size[1]-assisting_padding))
             if self.food not in self.snake_deque:
                 return
 
@@ -178,8 +180,8 @@ class SnakeGameAI:
 
         # Compute normalized food distance vector.
         # max_distance = math.sqrt(self.width ** 2 + self.height ** 2)
-        dx = (self.food[0] - self.head[0]) / self.field_size[0]  # max_distance
-        dy = (self.food[1] - self.head[1]) / self.field_size[1]  # max_distance
+        dx = 2.0 * (self.food[0] - self.head[0]) / self.field_size[0]  # max_distance
+        dy = 2.0 * (self.food[1] - self.head[1]) / self.field_size[1]  # max_distance
 
         # Normalized snake length.
         normalized_length = self.snake_length / (self.field_size[0] * self.field_size[1])
@@ -206,16 +208,9 @@ class SnakeGameAI:
         self._move(action)
         self._update_snake()
         self.steps_without_food += 1
-
         reward = 0.0
-
         game_over = False
-        if self._is_collision():
-            game_over = True
-            reward -= 100.0  # Death penalty
-            return reward, game_over, self.score
 
-        # Check if food is eaten.
         if self.head == self.food:
             self.snake_length += 1
             self.score += 1
@@ -223,9 +218,11 @@ class SnakeGameAI:
             self.steps_without_food = 0
             self._spawn_food()
 
-        if self.steps_without_food > self.max_steps_without_food:
+        if self.steps_without_food > self.max_steps_without_food or self._is_collision():
             game_over = True
             reward -= 100.0  # Death penalty
+            food_signal = 120.0 * (1.0 - magnitude(diff(self.food, self.head)) / magnitude(self.field_size))  # current proximity to food score
+            reward += food_signal
             return reward, game_over, self.score
 
         # Reward for survival (small incentive for each step taken)
@@ -248,6 +245,10 @@ def sum(a: tuple, b: tuple):
 
 def diff(a: tuple, b: tuple):
     return tuple(map(operator.sub, a, b))
+
+
+def magnitude(a: tuple) -> float:
+    return np.sqrt(np.sum(tuple(map(operator.mul, a, a))))
 
 
 if __name__ == '__main__':

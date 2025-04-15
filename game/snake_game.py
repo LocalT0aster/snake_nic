@@ -18,7 +18,7 @@ class SnakeGameAI:
     The AI agent receives a 21x21x3 vision matrix (walls, snake body, food) centered 
     on the snake's head along with normalized food distance (dx, dy) and normalized snake length.
     """
-    def __init__(self, field_size=(30, 20), block_size=20, snake_speed=15, render=False):
+    def __init__(self, field_size=(30, 30), block_size=20, snake_speed=15, render=False):
         # Game configuration
         self.field_width, self.field_height = field_size  # grid dimensions
         self.block_size = block_size
@@ -164,9 +164,9 @@ class SnakeGameAI:
         vision_flat = vision.flatten()  # 21*21*3 = 1323
 
         # Compute normalized food distance vector.
-        max_distance = math.sqrt(self.width ** 2 + self.height ** 2)
-        dx = (self.food_x - self.head_x) / max_distance
-        dy = (self.food_y - self.head_y) / max_distance
+        # max_distance = math.sqrt(self.width ** 2 + self.height ** 2)
+        dx = (self.food_x - self.head_x) / self.width #max_distance
+        dy = (self.food_y - self.head_y) / self.height #max_distance
         
         # Normalized snake length.
         normalized_length = self.snake_length / (self.field_width * self.field_height)

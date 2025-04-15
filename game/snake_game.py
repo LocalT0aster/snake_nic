@@ -1,13 +1,16 @@
 from collections import deque
 from copy import deepcopy
-import pygame
 import random
 import numpy as np
 import math
 import operator
 from enum import Enum
 
-from torchgen.gen import field
+# Disable the welcome message during import.
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
+
+import pygame
 
 class Direction(Enum):
     LEFT = 1

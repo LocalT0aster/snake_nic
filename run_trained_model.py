@@ -6,7 +6,7 @@ def run_trained_model():
     # Determine the device (CUDA if available, else CPU).
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
-    print(f"Running on device: {device}")
+    # print(f"Running on device: {device}")
     
     # Instantiate the model with FP16 mode if available, and load the saved weights.
     model = SnakeNet(use_fp16=(use_cuda)).to(device)

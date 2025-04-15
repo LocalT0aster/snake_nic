@@ -9,13 +9,8 @@ def create_seed_population(seed_model_path, population_size=DEFAULT_POPULATION_S
     seed_model = SnakeNet(use_fp16=(use_cuda)).to(device)
     seed_model.load_state_dict(torch.load(seed_model_path, map_location=device))
     seed_model.eval()
-
-    # Create a seeded population.
-    population = []
-    # Insert the seed model directly as one elite.
-    population.append(seed_model)
-
-    # Fill the rest of the population by copying and slightly mutating the seed.
+    
+    population = [seed_model]
     for _ in range(population_size - 1):
         candidate = SnakeNet(use_fp16=(use_cuda)).to(device)
         candidate.load_state_dict(seed_model.state_dict())
@@ -43,7 +38,7 @@ def continue_training(seed_model_path, extra_generations=50, render=False):
 if __name__ == "__main__":
     # Path to the existing best model.
     seed_model_path = "best_model.pth"
-    extra_generations = 400  # Extra generations for fine tuning.
+    extra_generations = 400
     best_model, best_fitness = continue_training(seed_model_path, extra_generations=extra_generations, render=False)
     print("Fine tuning complete. Best Fitness:", best_fitness)
     # Save the fine tuned model.

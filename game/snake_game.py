@@ -1,8 +1,12 @@
+from collections import deque
+from copy import deepcopy
 import pygame
 import random
 import numpy as np
 import math
 from enum import Enum
+
+from torchgen.gen import field
 
 class Direction(Enum):
     LEFT = 1
@@ -20,11 +24,11 @@ class SnakeGameAI:
     """
     def __init__(self, field_size=(30, 30), block_size=20, snake_speed=15, render=False):
         # Game configuration
-        self.field_width, self.field_height = field_size  # grid dimensions
+        self.field_size = field_size
         self.block_size = block_size
         self.snake_speed = snake_speed
-        self.width = self.field_width * self.block_size
-        self.height = self.field_height * self.block_size
+        self.window_width = self.field_size[0] * self.block_size
+        self.window_height = self.field_size[1] * self.block_size
 
         # Colors for drawing (if rendering is enabled)
         self.white = (255, 255, 255)
@@ -36,7 +40,7 @@ class SnakeGameAI:
         self.render = render
         if self.render:
             pygame.init()
-            self.display = pygame.display.set_mode((self.width, self.height))
+            self.display = pygame.display.set_mode((self.window_width, self.window_height))
             pygame.display.set_caption("Snake Game AI")
         self.clock = pygame.time.Clock()
 
@@ -46,28 +50,37 @@ class SnakeGameAI:
     def reset(self):
         """Reset the game to the starting state."""
         self.direction = Direction.RIGHT
-        self.head_x = self.width // 2
-        self.head_y = self.height // 2
-        self.snake_list = [[self.head_x, self.head_y]]  # snake starts with only the head
-        self.snake_length = 1
+        self.head = (self.field_size[0] // 2, self.field_size[1] // 2)
+        self.snake_deque: deque[tuple[int, int]] = deque(maxlen=self.field_size[0] * self.field_size[1])
+        self.snake_deque.append(self.head)
+        self.snake_deque.append((self.head[0] - 1, self.head[1]))
+        self.snake_length = 2
         self.score = 0
         self.frame_iteration = 0
         self._spawn_food()
 
     def _spawn_food(self):
         """Randomly place food on the grid."""
-        self.food_x = random.randrange(0, self.field_width) * self.block_size
-        self.food_y = random.randrange(0, self.field_height) * self.block_size
+        if self.snake_length >= self.field_size[0] * self.field_size[1]:
+            raise ValueError("Food does not fit inside the field")
+            return
+        
+        while True:
+            self.food = (random.randrange(0, self.field_size[0]), random.randrange(0, self.field_size[1]))
+            if self.food not in self.snake_deque:
+                return
+
+
 
     def _is_collision(self, point=None):
         """Check if the given point (or the snake's head) collides with boundaries or its own body."""
         if point is None:
-            point = [self.head_x, self.head_y]
+            point = self.head
         # Check boundaries
-        if point[0] < 0 or point[0] >= self.width or point[1] < 0 or point[1] >= self.height:
+        if not in_rect(point, (0, 0), self.field_size):
             return True
         # Check self-collision
-        if point in self.snake_list[1:]:
+        if self.snake_length > 4 and point in self.snake_deque[4:]:
             return True
         return False
 
@@ -101,78 +114,68 @@ class SnakeGameAI:
 
         # Update head position based on current direction.
         if self.direction == Direction.LEFT:
-            self.head_x -= self.block_size
+            self.head[0] -= 1
         elif self.direction == Direction.RIGHT:
-            self.head_x += self.block_size
+            self.head[0] += 1
         elif self.direction == Direction.UP:
-            self.head_y -= self.block_size
+            self.head[1] -= 1
         elif self.direction == Direction.DOWN:
-            self.head_y += self.block_size
+            self.head[1] += 1
 
     def _update_snake(self):
         """Add new head to the snake and remove the tail if not growing."""
-        self.snake_list.append([self.head_x, self.head_y])
-        if len(self.snake_list) > self.snake_length:
-            self.snake_list.pop(0)
+        self.snake_deque.appendLeft(deepcopy(self.head))
+        if len(self.snake_deque) > self.snake_length:
+            self.snake_deque.pop()
 
     def _draw_elements(self):
         """Render the game graphics."""
         self.display.fill(self.blue)
-        pygame.draw.rect(self.display, self.green, [self.food_x, self.food_y, self.block_size, self.block_size])
-        for segment in self.snake_list:
-            pygame.draw.rect(self.display, self.black, [segment[0], segment[1], self.block_size, self.block_size])
+        pygame.draw.rect(self.display, self.green, [self.food[0] * self.block_size, self.food[1] * self.block_size, self.block_size, self.block_size])
+        for segment in self.snake_deque:
+            pygame.draw.rect(self.display, self.black, [segment[0] * self.block_size, segment[1] * self.block_size, self.block_size, self.block_size])
         pygame.display.flip()
 
     def get_state(self):
         """
         Construct the input representation for the neural network.
-        
-        Returns:
-            state (np.ndarray): A flattened vector of size 1326, comprising:
-                - A 21x21x3 vision matrix centered on the snake's head.
-                - A normalized (dx, dy) vector to the food.
-                - The normalized snake length.
         """
         vision_size = 21
         half = vision_size // 2
-        vision = np.zeros((vision_size, vision_size, 3), dtype=np.float32)
+        vision = np.zeros((vision_size, vision_size, 3), dtype=np.float16)
         
         # Top-left position of the vision grid in pixel coordinates
-        start_x = self.head_x - half * self.block_size
-        start_y = self.head_y - half * self.block_size
+        start_x = self.head[0] - half
+        start_y = self.head[1] - half
 
         # Populate the vision matrix cell by cell.
-        for i in range(vision_size):
-            for j in range(vision_size):
-                cell_x = start_x + i * self.block_size
-                cell_y = start_y + j * self.block_size
-                
+        for cell_x in range(start_x, start_x + vision_size):
+            for cell_y in range(start_y, start_y + vision_size):
                 # Mark walls if out of bounds.
-                if cell_x < 0 or cell_x >= self.width or cell_y < 0 or cell_y >= self.height:
-                    vision[i, j, 0] = 1.0  # Wall
+                if not in_rect((cell_x, cell_y), (0, 0), self.field_size):
+                    vision[cell_x, cell_y, 0] = 1.0  # Wall
                 else:
-                    # Mark snake body presence.
-                    for segment in self.snake_list:
-                        if segment[0] == cell_x and segment[1] == cell_y:
-                            vision[i, j, 1] = 1.0
-                            break
                     # Mark food presence.
-                    if cell_x == self.food_x and cell_y == self.food_y:
-                        vision[i, j, 2] = 1.0
+                    if cell_x == self.food[0] and cell_y == self.food[1]:
+                        vision[cell_x, cell_y, 2] = 1.0
+        
+        # Mark snake body presence.
+        for segment in self.snake_deque:
+            if in_rect(segment, (start_x, start_y), (start_x + vision_size, start_y + vision_size)):
+                vision[segment[0] - start_x, segment[1] - start_y, 1] = 1.0
         
         # Flatten the vision matrix.
-        vision_flat = vision.flatten()  # 21*21*3 = 1323
+        # vision_flat = vision.flatten()  # 21*21*3 = 1323
 
         # Compute normalized food distance vector.
         # max_distance = math.sqrt(self.width ** 2 + self.height ** 2)
-        dx = (self.food_x - self.head_x) / self.width #max_distance
-        dy = (self.food_y - self.head_y) / self.height #max_distance
-        
+        dx = (self.food[0] - self.head[0]) / self.field_size[0] #max_distance
+        dy = (self.food[1] - self.head[1]) / self.field_size[1] #max_distance
+
         # Normalized snake length.
-        normalized_length = self.snake_length / (self.field_width * self.field_height)
-        
-        state = np.concatenate((vision_flat, np.array([dx, dy, normalized_length], dtype=np.float32)))
-        return state  # shape: (1326,)
+        normalized_length = self.snake_length / (self.field_size[0] * self.field_size[1])
+
+        return vision, np.array([dx, dy, normalized_length], dtype=np.float16)
 
     def play_step(self, action):
         """
@@ -199,11 +202,11 @@ class SnakeGameAI:
         game_over = False
         if self._is_collision():
             game_over = True
-            reward -= 30.0  # Death penalty
+            reward -= 100.0  # Death penalty
             return reward, game_over, self.score
         
         # Check if food is eaten.
-        if self.head_x == self.food_x and self.head_y == self.food_y:
+        if self.head[0] == self.food[0] and self.head[1] == self.food[1]:
             self.snake_length += 1
             self.score += 1
             reward += 100.0  # Reward for eating food
@@ -217,6 +220,10 @@ class SnakeGameAI:
             self.clock.tick(self.snake_speed)
         
         return reward, game_over, self.score
+    
+
+def in_rect(point: tuple, start: tuple, end: tuple) -> bool:
+    return point[0] >= start[0] and point[0] < end[0] and point[1] >= start[1] and point[1] < end[1]
 
 if __name__ == '__main__':
     # Quick test: run a manual game with random actions.

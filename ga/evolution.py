@@ -10,8 +10,8 @@ device = torch.device("cuda" if use_cuda else "cpu")
 print(f"Using device: {device}")
 
 # GA configuration constants.
-POPULATION_SIZE = 50
-ELITE_PERCENT = 0.10   # Top 10% are preserved
+DEFAULT_POPULATION_SIZE = 50
+DEFAULT_ELITE_PERCENT = 0.10   # Top 10% are preserved
 DEFAULT_NUM_GENERATIONS = 100
 STEPS_PER_GAME = 500   # Maximum number of steps per simulation
 
@@ -47,7 +47,14 @@ def evaluate_individual(model: SnakeNet, render: bool = False) -> float:
     return fitness
 
 
-def run_evolution(render: bool = False, initial_population: list[SnakeNet] | None = None, num_generations: int = DEFAULT_NUM_GENERATIONS):
+def run_evolution(render: bool = False,
+                  initial_population: list[SnakeNet] | None = None,
+                  num_generations: int = DEFAULT_NUM_GENERATIONS,
+                  population_size: int = DEFAULT_POPULATION_SIZE,
+                  elite_percent: float = DEFAULT_ELITE_PERCENT,
+                  mutation_rate: float = 0.1,
+                  sigma: float = 0.1
+                  ) -> tuple[SnakeNet, float]:
     """
     Run the genetic algorithm over a set number of generations.
 
@@ -55,18 +62,24 @@ def run_evolution(render: bool = False, initial_population: list[SnakeNet] | Non
         render (bool): Whether to render game simulations.
         initial_population (list[SnakeNet]): initial population of models. If None, creates a new population of models.
         num_generations (int): The number of generations to run the evolution process.
+        population_size (int): The size of the population for the genetic algorithm.
+        elite_percent (float): The proportion of the population that is retained as elite models.
+        mutation_rate (float): The probability of mutating each gene.
+        sigma (float): Standard deviation of the Gaussian noise during mutation.
 
     Returns:
-        best_model (SnakeNet): The best model from the evolution process.
-        best_fitness (float): The best fitness score achieved.
+        result (tuple[SnakeNet, float]): `best_model`, `best_fitness`: The best model from the evolution process; The best fitness score achieved.
     """
+    if int(population_size * elite_percent) < 1:
+        raise ValueError("0 or less survivors after elitism selection.")
+
     # If no initial population is provided, create a new one.
     if initial_population is None:
-        population = [SnakeNet().to(device) for _ in range(POPULATION_SIZE)]
+        population = [SnakeNet().to(device) for _ in range(population_size)]
     else:
         population = initial_population
-        # If population is smaller than POPULATION_SIZE, fill the remainder with new random models.
-        while len(population) < POPULATION_SIZE:
+        # If population is smaller than population_size, fill the remainder with new random models.
+        while len(population) < population_size:
             population.append(SnakeNet().to(device))
 
     best_fitness = -float('inf')
@@ -90,22 +103,22 @@ def run_evolution(render: bool = False, initial_population: list[SnakeNet] | Non
         # Sort population by fitness in descending order.
         sorted_indices = np.argsort(fitness_scores)[::-1]
         sorted_population = [population[i] for i in sorted_indices]
-        
-        # Elitism: preserve top ELITE_PERCENT individuals.
-        num_elites = int(POPULATION_SIZE * ELITE_PERCENT)
+
+        # Elitism: preserve top elite_percent individuals.
+        num_elites = int(population_size * elite_percent)
         new_population = sorted_population[:num_elites]
-        
+
         # Generate new offspring until the population is refilled.
-        while len(new_population) < POPULATION_SIZE:
-            parent1 = tournament_selection(population, fitness_scores, tournament_size=5)
-            parent2 = tournament_selection(population, fitness_scores, tournament_size=5)
+        while len(new_population) < population_size:
+            parent1 = tournament_selection(population, fitness_scores, tournament_size=int(population_size * elite_percent))
+            parent2 = tournament_selection(population, fitness_scores, tournament_size=int(population_size * elite_percent))
 
             parent1_dict = parent1.state_dict()
             parent2_dict = parent2.state_dict()
             child1_dict, child2_dict = uniform_crossover(parent1_dict, parent2_dict, mix_rate=0.5)
 
-            child1_dict = apply_mutation(child1_dict, mutation_rate=0.10, sigma=0.1)
-            child2_dict = apply_mutation(child2_dict, mutation_rate=0.10, sigma=0.1)
+            child1_dict = apply_mutation(child1_dict, mutation_rate=mutation_rate, sigma=sigma)
+            child2_dict = apply_mutation(child2_dict, mutation_rate=mutation_rate, sigma=sigma)
 
             child1 = SnakeNet().to(device)
             child2 = SnakeNet().to(device)
@@ -113,10 +126,10 @@ def run_evolution(render: bool = False, initial_population: list[SnakeNet] | Non
             child2.load_state_dict(child2_dict)
 
             new_population.append(child1)
-            if len(new_population) < POPULATION_SIZE:
+            if len(new_population) < population_size:
                 new_population.append(child2)
 
-        population = new_population[:POPULATION_SIZE]
+        population = new_population[:population_size]
 
     return best_model, best_fitness
 

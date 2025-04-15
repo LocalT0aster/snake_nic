@@ -31,6 +31,8 @@ class SnakeGameAI:
         self.field_size = field_size
         self.block_size = block_size
         self.snake_speed = snake_speed
+        self.max_steps_without_food = field_size[0] * field_size[1] // 2
+        self.steps_without_food = 0
         self.window_width = self.field_size[0] * self.block_size
         self.window_height = self.field_size[1] * self.block_size
 
@@ -200,6 +202,7 @@ class SnakeGameAI:
 
         self._move(action)
         self._update_snake()
+        self.steps_without_food += 1
 
         reward = 0.0
         
@@ -213,11 +216,17 @@ class SnakeGameAI:
         if self.head == self.food:
             self.snake_length += 1
             self.score += 1
-            reward += 100.0  # Reward for eating food
+            reward += 150.0  # Reward for eating food
+            self.steps_without_food = 0
             self._spawn_food()
+
+        if self.steps_without_food > self.max_steps_without_food:
+            game_over = True
+            reward -= 100.0  # Death penalty
+            return reward, game_over, self.score
         
         # Reward for survival (small incentive for each step taken)
-        reward += 0.1
+        reward += 0.01
 
         if self.render:
             self._draw_elements()

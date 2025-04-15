@@ -8,7 +8,7 @@ def run_trained_model():
     device = torch.device("cuda" if use_cuda else "cpu")
     print(f"Running on device: {device}")
     
-    # Instantiate the model and load the saved weights.
+    # Instantiate the model with FP16 mode if available, and load the saved weights.
     model = SnakeNet(use_fp16=(use_cuda)).to(device)
     model.load_state_dict(torch.load("best_model.pth", map_location=device))
     model.eval()  # Set the model to evaluation mode
@@ -20,12 +20,15 @@ def run_trained_model():
     # Run the game loop.
     while True:
         # Get the current game state.
-        state = game.get_state()
-        state_tensor = torch.tensor(state, dtype=torch.float16).unsqueeze(0).to(device)
+        # Expecting a tuple: (vision, extra)
+        vision, extra = game.get_state()
+        # Convert the vision data (shape: 21x21x3) and extra features (shape: 3) to tensors.
+        vision_tensor = torch.tensor(vision, dtype=torch.float16).unsqueeze(0).to(device)  # (1, 21, 21, 3)
+        extra_tensor = torch.tensor(extra, dtype=torch.float16).unsqueeze(0).to(device)      # (1, 3)
         
-        # Compute the model's action.
+        # Compute the model's action using the two input branches.
         with torch.no_grad():
-            output = model(state_tensor)
+            output = model(vision_tensor, extra_tensor)
         action = torch.argmax(output, dim=1).item()
         
         # Perform one game step.

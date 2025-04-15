@@ -9,7 +9,7 @@ def run_trained_model():
     print(f"Running on device: {device}")
     
     # Instantiate the model and load the saved weights.
-    model = SnakeNet().to(device)
+    model = SnakeNet(use_fp16=(use_cuda)).to(device)
     model.load_state_dict(torch.load("best_model.pth", map_location=device))
     model.eval()  # Set the model to evaluation mode
 
@@ -21,7 +21,7 @@ def run_trained_model():
     while True:
         # Get the current game state.
         state = game.get_state()
-        state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
+        state_tensor = torch.tensor(state, dtype=torch.float16).unsqueeze(0).to(device)
         
         # Compute the model's action.
         with torch.no_grad():

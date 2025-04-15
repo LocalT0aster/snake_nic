@@ -34,7 +34,7 @@ def evaluate_individual(model: SnakeNet, render: bool = False) -> float:
     while steps < STEPS_PER_GAME:
         state = game.get_state()
         # Convert state to PyTorch tensor and move to device.
-        state_tensor = torch.tensor(state, dtype=torch.float32).unsqueeze(0).to(device)
+        state_tensor = torch.tensor(state, dtype=torch.float16).unsqueeze(0).to(device)
         with torch.no_grad():
             output = model(state_tensor)
         action = torch.argmax(output, dim=1).item()
@@ -75,12 +75,12 @@ def run_evolution(render: bool = False,
 
     # If no initial population is provided, create a new one.
     if initial_population is None:
-        population = [SnakeNet().to(device) for _ in range(population_size)]
+        population = [SnakeNet(use_fp16=(use_cuda)).to(device) for _ in range(population_size)]
     else:
         population = initial_population
         # If population is smaller than population_size, fill the remainder with new random models.
         while len(population) < population_size:
-            population.append(SnakeNet().to(device))
+            population.append(SnakeNet(use_fp16=(use_cuda)).to(device))
 
     best_fitness = -float('inf')
     best_model = None
@@ -120,8 +120,8 @@ def run_evolution(render: bool = False,
             child1_dict = apply_mutation(child1_dict, mutation_rate=mutation_rate, sigma=sigma)
             child2_dict = apply_mutation(child2_dict, mutation_rate=mutation_rate, sigma=sigma)
 
-            child1 = SnakeNet().to(device)
-            child2 = SnakeNet().to(device)
+            child1 = SnakeNet(use_fp16=(use_cuda)).to(device)
+            child2 = SnakeNet(use_fp16=(use_cuda)).to(device)
             child1.load_state_dict(child1_dict)
             child2.load_state_dict(child2_dict)
 

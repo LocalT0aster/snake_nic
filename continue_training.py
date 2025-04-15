@@ -1,11 +1,11 @@
 import torch
 from agents.snake_net import SnakeNet
-from ga.evolution import run_evolution, DEFAULT_POPULATION_SIZE, device
+from ga.evolution import run_evolution, DEFAULT_POPULATION_SIZE, device, use_cuda
 from ga.operators import apply_mutation
 
 def create_seed_population(seed_model_path, population_size=DEFAULT_POPULATION_SIZE) -> list[SnakeNet]:
     # Load the best pre-trained model.
-    seed_model = SnakeNet().to(device)
+    seed_model = SnakeNet(use_fp16=(use_cuda)).to(device)
     seed_model.load_state_dict(torch.load(seed_model_path, map_location=device))
     seed_model.eval()
     
@@ -16,7 +16,7 @@ def create_seed_population(seed_model_path, population_size=DEFAULT_POPULATION_S
     
     # Fill the rest of the population by copying and slightly mutating the seed.
     for _ in range(population_size - 1):
-        candidate = SnakeNet().to(device)
+        candidate = SnakeNet(use_fp16=(use_cuda)).to(device)
         candidate.load_state_dict(seed_model.state_dict())
         # Apply a small mutation for diversity.
         candidate_state = candidate.state_dict()

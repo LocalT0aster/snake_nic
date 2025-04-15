@@ -193,29 +193,27 @@ class SnakeGameAI:
 
         self._move(action)
         self._update_snake()
+
+        reward = 0.0
         
         game_over = False
         if self._is_collision():
             game_over = True
-            reward = -30  # Death penalty
+            reward -= 30.0  # Death penalty
             return reward, game_over, self.score
         
         # Check if food is eaten.
         if self.head_x == self.food_x and self.head_y == self.food_y:
             self.snake_length += 1
             self.score += 1
-            reward = 100  # Reward for eating food
+            reward += 100.0  # Reward for eating food
             self._spawn_food()
-        else:
-            reward = 0
         
         # Reward for survival (small incentive for each step taken)
         reward += 0.1
 
         if self.render:
             self._draw_elements()
-            self.clock.tick(self.snake_speed)
-        else:
             self.clock.tick(self.snake_speed)
         
         return reward, game_over, self.score

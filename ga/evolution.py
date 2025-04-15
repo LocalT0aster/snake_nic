@@ -27,7 +27,7 @@ def evaluate_individual(model, render=False):
         fitness (float): The fitness score computed based on reward accumulated.
     """
     game = SnakeGameAI(render=render)
-    total_reward = 0
+    total_reward = 0.0
     game.reset()
     steps = 0
     while steps < STEPS_PER_GAME:
